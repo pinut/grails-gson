@@ -7,8 +7,9 @@ import grails.plugin.gson.spring.GsonBuilderFactory
 import grails.plugin.gson.support.proxy.DefaultEntityProxyHandler
 import grails.test.mixin.Mock
 import spock.lang.Specification
+import spock.lang.IgnoreRest
 
-@Mock(Pirate)
+@Mock([Pirate, Ship])
 class BasicCollectionSpec extends Specification {
 
 	Gson gson
@@ -26,6 +27,7 @@ class BasicCollectionSpec extends Specification {
 
 	void setup() {
 		def gsonBuilder = applicationContext.getBean('gsonBuilder', GsonBuilder)
+		gsonBuilder.setDateFormat('yyyy-MM-dd')
 		gson = gsonBuilder.create()
 	}
 
@@ -74,6 +76,22 @@ class BasicCollectionSpec extends Specification {
 		json.commands.get(0).asString == pirate.commands[0]
 		json.commands.get(1).asString == pirate.commands[1]
 	}
+
+	void 'can deserialize a new instance with date list'() {
+		given:
+		def data = [
+			name: "Queen Anne’s Revenge",
+			maintenanceDates: [Date.parse('yyyy-MM-dd', '1717-03-24'), Date.parse('yyyy-MM-dd', '1717-07-08')]
+		]
+		def json = gson.toJson(data)
+
+		when:
+		def ship = gson.fromJson(json, Ship)
+
+		then:
+		ship.name == data.name
+		ship.maintenanceDates == data.maintenanceDates
+	}
 }
 
 @Entity
@@ -82,4 +100,12 @@ class Pirate {
 	List<String> commands
 
 	static hasMany = [commands: String]
+}
+
+@Entity
+class Ship {
+	String name
+	List<Date> maintenanceDates
+
+	static hasMany = [maintenanceDates: Date]
 }
