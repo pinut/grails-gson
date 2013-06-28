@@ -67,7 +67,13 @@ class GrailsDomainSerializer<T> implements JsonSerializer<T> {
 		if (shouldOutputVersion()) {
 			iterator(domainClass.version)
 		}
-		for (property in domainClass.persistentProperties) iterator(property)
+		def serializableProperties = domainClass.persistentProperties.findAll { isSerializable(it) }
+		for (property in serializableProperties) iterator(property)
+	}
+
+	private boolean isSerializable(GrailsDomainClassProperty property) {
+		def metaConstraints = property.domainClass.constrainedProperties[property.name]?.metaConstraints
+		metaConstraints?.serializable == null || metaConstraints.serializable
 	}
 
 	private void handleCircularReference(GrailsDomainClassProperty property) {
